@@ -1,0 +1,130 @@
+
+(define make-ok
+  (lambda (val)
+    (cons 'ok val)
+  )
+ )
+
+(define make-error
+  (lambda (msg)
+    (cons 'error msg)
+  )
+ )
+
+(define ok?
+  (lambda (res)
+    (if(pair? res)(if (eq? (car res) 'ok) #t #f) #f)
+  )
+ )
+
+(define error?
+  (lambda (res)
+     (if(pair? res)(if (eq? (car res) 'error) #t #f) #f)
+  )
+ )
+
+(define result?
+  (lambda (res)
+    (if(pair? res) (if(ok? res) #t (if(error? res)#t #f)) #f)
+  )
+ )
+
+
+(define result->val
+  (lambda (res)
+    (if(result? res)(cdr res) '())
+  )
+)
+
+
+(define bind 
+  (lambda (f)
+    (lambda(res)
+      (if (ok? res)(f(result->val res)) res)
+    )
+  )
+)
+
+(define make-dict
+  (lambda ()
+    '()
+  )
+)
+
+
+(define list?
+  (lambda (ls)
+    (if(eq? ls '() )
+      #t
+      (if(pair? ls)
+        (list? cdr ls)
+        #f
+      )
+    )
+  )
+)
+
+(define dict?
+  (lambda (e)
+      (if(empty? e) #t (and (pair? (car e)) (dict? (cdr e))))
+  )
+)
+
+(define get
+  (lambda (dict k)
+    (if(dict? dict)
+      (if(empty? dict)
+        (make-error "Key not found")
+        (if(eq? (car (car dict)) k )
+          (make-ok (cdr (car dict)))
+          (get (cdr dict) k)
+        )
+      )
+      (make-error "Error: not a dictionary")
+    )
+  )
+)
+
+(define put
+  (lambda (dict k v)
+    (if(dict? dict)
+      (if(empty? dict)
+        (make-ok(cons(cons k v) dict))
+        (if(eq? (car(car dict)) k)
+          (make-ok( cons (cons k v) (cdr dict) ))
+          (make-ok(cons(car dict) (result->val(put(cdr dict) k v))))
+        )
+      )
+      (make-error "Error: not a dictionary")
+    )
+  )
+)
+
+
+
+(define map-dict
+  (lambda (dict f)
+    (if(dict? dict)
+      (if(empty? dict)
+        (make-ok '() )
+        (make-ok(cons(cons (car (car dict) ) (f (cdr(car dict)) ) ) (result->val(map-dict (cdr dict) f))))
+      )
+      (make-error "Error: not a dictionary")
+    )
+  )
+)
+
+(define filter-dict
+  (lambda (dict pred)
+    (if (dict? dict)
+      (if (empty? dict)
+        (make-ok '())
+        (if (pred (car(car dict)) (cdr(car dict)))
+          (make-ok (cons (cons (car(car dict)) (cdr(car dict))) (result->val(filter-dict (cdr dict) pred))))
+          (filter-dict (cdr dict) pred)
+        )
+      )
+      (make-error "Error: not a dictionary")
+    )
+  )
+)
